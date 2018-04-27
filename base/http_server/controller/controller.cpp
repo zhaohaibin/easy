@@ -59,3 +59,146 @@ std::map<std::string, string> controller::get_query_params(struct mg_connection 
 	return query_params;
 }
 
+std::map<std::string, std::string> controller::get_form_data(struct mg_connection *conn)
+{
+	std::map<std::string, std::string> form_data;
+	const mg_request_info* p_mg_request_info = mg_get_request_info(conn);
+	char*  p_buffer = new char[(size_t)p_mg_request_info->content_length];
+	int ret = mg_read(conn, p_buffer, (size_t)p_mg_request_info->content_length);
+	string data(p_buffer);
+	delete p_buffer;
+	int64_t index = 0;
+	while (true)
+	{
+		string key, val;
+		index = get_next_form_data(data, (size_t)index, key, val);
+		if (index > 0)
+			form_data.insert(std::make_pair(key, val));
+		else
+			break;
+	}
+	return form_data;
+}
+
+std::map<std::string, std::string> controller::get_urlencoded_form_data(struct mg_connection *conn)
+{
+	std::map<std::string, std::string> form_data;
+	const mg_request_info* p_mg_request_info = mg_get_request_info(conn);
+	char*  p_buffer = new char[(size_t)p_mg_request_info->content_length];
+	int ret = mg_read(conn, p_buffer, (size_t)p_mg_request_info->content_length);
+	char* p_decode_buffer = new char[(size_t)p_mg_request_info->content_length];
+	ret = mg_url_decode(p_buffer, ret, p_decode_buffer, (size_t)p_mg_request_info->content_length, 1);
+	string data(p_decode_buffer);
+	delete p_buffer;
+	delete p_decode_buffer;
+	int64_t index = 0;
+	while (true)
+	{
+		string key, val;
+		index = get_next_urlencoded_form_data(data, (size_t)index, key, val);
+		if (index > 0)
+			form_data.insert(std::make_pair(key, val));
+		else
+			break;
+	}
+	return form_data;
+}
+
+int64_t controller::get_next_form_data(
+	const string& data, size_t pos,
+	std::string& key, std::string& val)
+{
+	size_t index = pos;
+
+	// step = 0 查找key
+	// step = 1 查找value
+	// step = 2 结束
+	int step = 0;
+	while (index < data.size())
+	{
+		if (step == 0)
+		{
+			if (index < data.size() - 1 && data[index] == '=' && data[index+1] == '\"')
+			{
+				++index;
+				while (++index < data.size())
+				{
+					if (data[index] == '\"' && data[index + 1] == '\r' && data[index + 2] == '\n')
+					{
+						step = 1;
+						index += 4;
+						break;
+					}
+					key.push_back(data[index]);
+				}
+			}
+			else
+			{
+				++index;
+			}
+		}else if (step == 1)
+		{
+			while (++index < data.size())
+			{
+				if (data[index] == '\r' && data[index+1] == '\n')
+				{
+					step = 2;
+					index += 2;
+					break;
+				}
+				val.push_back(data[index]);
+			}
+		}
+		else if(step == 2)
+		{
+			break;
+		}
+	}
+	if (step == 2) return index;
+	return -1;
+}
+
+int64_t controller::get_next_urlencoded_form_data(
+	const string& data, size_t pos,
+	std::string& key, std::string& val)
+{
+	size_t index = pos;
+
+	// step = 0 查找key
+	// step = 1 查找value
+	// step = 2 结束
+	int step = 0;
+
+	while (index < data.size())
+	{
+		if (step == 0)
+		{
+			if(index < data.size() && data[index] == '=')
+			{
+				step = 1;
+			}
+			else
+			{
+				key.push_back(data[index]);
+			}
+			++index;
+		}
+		else if (step == 1)
+		{
+			if ( (index < data.size() && data[index] == '&') || (index+1 == data.size()))
+			{
+				step = 2;
+			}else
+			{
+				val.push_back(data[index]);
+			}
+			++index;
+		}
+		else if (step == 2)
+		{
+			break;
+		}
+	}
+	if (step == 2) return index;
+	return -1;
+}

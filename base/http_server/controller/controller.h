@@ -22,6 +22,10 @@ public:
 
 protected:
 	map<string, string> get_query_params(struct mg_connection *conn);
+	map<string, string> get_form_data(struct mg_connection *conn);
+	map<string, string> get_urlencoded_form_data(struct mg_connection *conn);
+	int64_t get_next_form_data(const string& data, size_t pos, std::string& key, std::string& val);
+	int64_t get_next_urlencoded_form_data(const string& data, size_t pos, std::string& key, std::string& val);
 private:
 	string m_uri;
 	http_method m_http_method;
