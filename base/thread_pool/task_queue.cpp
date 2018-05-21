@@ -10,6 +10,11 @@ namespace base
 			InitializeCriticalSection(&m_cs);
 		}
 
+		task_queue::~task_queue()
+		{
+			DeleteCriticalSection(&m_cs);
+		}
+
 		void task_queue::push_taks(task_ptr sp_task)
 		{
 			EnterCriticalSection(&m_cs);

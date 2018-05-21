@@ -21,6 +21,7 @@ public:
 	http_method get_http_method();
 
 protected:
+	string get_query_string(struct mg_connection *conn);
 	map<string, string> get_query_params(struct mg_connection *conn);
 	map<string, string> get_form_data(struct mg_connection *conn);
 	map<string, string> get_urlencoded_form_data(struct mg_connection *conn);

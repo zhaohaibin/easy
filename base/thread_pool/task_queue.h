@@ -14,6 +14,7 @@ namespace base
 		{
 		public:
 			task_queue();
+			~task_queue();
 
 		public:
 			//将任务添加到队列尾部

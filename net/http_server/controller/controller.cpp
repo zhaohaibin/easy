@@ -1,7 +1,7 @@
 #include "controller.h"
 #include "response.h"
 #include "http_header.h"
-#include "base\string\string_helper\string_helper.h"
+#include "easy\base\misc\string_helper\string_helper.h"
 #include "civetweb.h"
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
@@ -32,6 +32,14 @@ std::string controller::get_uri()
 http_method controller::get_http_method()
 {
 	return m_http_method;
+}
+
+std::string controller::get_query_string(struct mg_connection *conn)
+{
+	const mg_request_info* p_mg_request_info = mg_get_request_info(conn);
+	const char *p_query_string = p_mg_request_info->query_string;
+	if(p_query_string != nullptr) return string(p_query_string);
+	return "";
 }
 
 std::map<std::string, string> controller::get_query_params(struct mg_connection *conn)
@@ -66,7 +74,7 @@ std::map<std::string, std::string> controller::get_form_data(struct mg_connectio
 	char*  p_buffer = new char[(size_t)p_mg_request_info->content_length];
 	int ret = mg_read(conn, p_buffer, (size_t)p_mg_request_info->content_length);
 	string data(p_buffer);
-	delete p_buffer;
+	delete []p_buffer;
 	int64_t index = 0;
 	while (true)
 	{
@@ -89,8 +97,8 @@ std::map<std::string, std::string> controller::get_urlencoded_form_data(struct m
 	char* p_decode_buffer = new char[(size_t)p_mg_request_info->content_length];
 	ret = mg_url_decode(p_buffer, ret, p_decode_buffer, (size_t)p_mg_request_info->content_length, 1);
 	string data(p_decode_buffer);
-	delete p_buffer;
-	delete p_decode_buffer;
+	delete []p_buffer;
+	delete []p_decode_buffer;
 	int64_t index = 0;
 	while (true)
 	{

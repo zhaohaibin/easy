@@ -4,20 +4,15 @@
 #include <string>
 #include <locale>
 #include <cstdint>
-#include "boost/lexical_cast.hpp"
-
+#include <vector>
 namespace string_helper
 {
 	std::string wstring_to_utf8(const std::wstring& str);
+	std::string wstring_to_ansi(const std::wstring& str);
 	std::wstring utf8_to_wstring(const std::string& str);
-
+	std::wstring ansi_to_wstring(const std::string& str);
 	std::wstring lower_string(const std::wstring& str);
 
-
-	template<typename T1, typename T2>
-	T1 cast_to_string(T2 val)
-	{
-		return boost::lexical_cast<T1>(val);
-	}
+	std::vector<std::string> split(const std::string& str, const std::string& sc);
 }
 #endif //_STRING_HELPER_H
