@@ -52,9 +52,10 @@ namespace smartlog
                 boost::log::keywords::max_files = 12,
                 boost::log::keywords::scan_method = boost::log::sinks::file::scan_all,
                 boost::log::keywords::target = logFilePath.parent_path().generic_string(),
-                boost::log::keywords::open_mode = std::ios_base::app);
+                boost::log::keywords::open_mode = std::ios_base::app,
+				boost::log::keywords::auto_flush = true);
         fsSink->set_formatter(logFmt);
-        fsSink->locked_backend()->auto_flush(true);
+        //fsSink->locked_backend()->auto_flush(true);
 		fsSink->set_filter((boost::log::expressions::has_attr(tag_attr) && tag_attr == alias));
 		boost::log::core::get()->add_sink(fsSink);
 

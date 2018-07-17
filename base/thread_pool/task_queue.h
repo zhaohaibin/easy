@@ -3,6 +3,7 @@
 #include <queue>
 #include "task.h"
 #include<windows.h>
+#include "boost/thread/mutex.hpp"
 using namespace std;
 
 namespace base
@@ -26,6 +27,7 @@ namespace base
 		private:
 			queue<task_ptr> m_task_queue;
 			CRITICAL_SECTION m_cs;
+			boost::mutex m_mutex;
 		};
 	}
 }

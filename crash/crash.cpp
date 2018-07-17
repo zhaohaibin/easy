@@ -11,6 +11,26 @@ namespace base
 {
 	namespace crash
 	{
+		shared_ptr<crash_handler> sp_g_crash_handler = nullptr;
+
+		class scope_handler
+		{
+		public:
+			scope_handler(const string& dump_file)
+				: m_dump_file(dump_file)
+			{
+				if (sp_g_crash_handler)
+					sp_g_crash_handler->enter_crash();
+			}
+			~scope_handler()
+			{
+				if (sp_g_crash_handler)
+					sp_g_crash_handler->leave_crash(m_dump_file);
+			}
+		private:
+			string m_dump_file;
+		};
+
 		//format excepton info
 		wstring format_exception_info(EXCEPTION_RECORD* pExceptionRecord)
 		{
@@ -253,19 +273,29 @@ namespace base
 
 		LONG WINAPI un_handled_exception_filter(struct _EXCEPTION_POINTERS *pExceptionPointers)
 		{
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->enter_crash();
 			wchar_t file_name[MAX_PATH];
 			::GetModuleFileNameW(NULL, file_name, MAX_PATH);
 			boost::filesystem::path file_path(file_name);
 			boost::filesystem::path parent_path = file_path.parent_path();
 			wstring dump_name = generate_dump_file_name();
 			parent_path.append(dump_name);
+
 			create_mini_dump(pExceptionPointers, parent_path.generic_wstring());
+
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->leave_crash(parent_path.generic_string());
+			//TerminateProcess(GetCurrentProcess(), 1);
 			return 0;
 		}
 
 		//CRT Pure virtual method call handler
 		void __cdecl pure_virtual_exception_handler()
 		{
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->enter_crash();
+
 			// Retrieve exception information
 			EXCEPTION_POINTERS* pExceptionPtrs = NULL;
 			get_exception_pointers(0, &pExceptionPtrs);
@@ -278,6 +308,8 @@ namespace base
 			wstring dump_name = generate_dump_file_name();
 			parent_path.append(dump_name);
 			create_mini_dump(pExceptionPtrs, parent_path.generic_wstring());
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->leave_crash(parent_path.generic_string());
 			// Terminate process
 			TerminateProcess(GetCurrentProcess(), 1);
 		}
@@ -285,6 +317,8 @@ namespace base
 		// CRT invalid parameter handler
 		int __cdecl new_exception_handler(size_t)
 		{
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->enter_crash();
 			// Retrieve exception information
 			EXCEPTION_POINTERS* pExceptionPtrs = NULL;
 			get_exception_pointers(0, &pExceptionPtrs);
@@ -296,7 +330,11 @@ namespace base
 			boost::filesystem::path parent_path = file_path.parent_path();
 			wstring dump_name = generate_dump_file_name();
 			parent_path.append(dump_name);
+
 			create_mini_dump(pExceptionPtrs, parent_path.generic_wstring());
+
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->leave_crash(parent_path.generic_string());
 			// Terminate process
 			TerminateProcess(GetCurrentProcess(), 1);
 
@@ -312,6 +350,8 @@ namespace base
 			unsigned int line,
 			uintptr_t pReserved)
 		{
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->enter_crash();
 			// Invalid parameter exception
 
 			// Retrieve exception information
@@ -325,7 +365,11 @@ namespace base
 			boost::filesystem::path parent_path = file_path.parent_path();
 			wstring dump_name = generate_dump_file_name();
 			parent_path.append(dump_name);
+
 			create_mini_dump(pExceptionPtrs, parent_path.generic_wstring());
+
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->leave_crash(parent_path.generic_string());
 			// Terminate process
 			TerminateProcess(GetCurrentProcess(), 1);
 		}
@@ -334,6 +378,8 @@ namespace base
 		// CRT SIGABRT signal handler
 		void sigabrt_handler(int)
 		{
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->enter_crash();
 			// Caught SIGABRT C++ signal
 
 			// Retrieve exception information
@@ -348,6 +394,8 @@ namespace base
 			wstring dump_name = generate_dump_file_name();
 			parent_path.append(dump_name);
 			create_mini_dump(pExceptionPtrs, parent_path.generic_wstring());
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->leave_crash(parent_path.generic_string());
 			// Terminate process
 			TerminateProcess(GetCurrentProcess(), 1);
 		}
@@ -355,6 +403,8 @@ namespace base
 		// CRT sigint signal handler
 		void sigint_handler(int)
 		{
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->enter_crash();
 			// Interruption (SIGINT)
 
 			// Retrieve exception information
@@ -369,6 +419,10 @@ namespace base
 			wstring dump_name = generate_dump_file_name();
 			parent_path.append(dump_name);
 			create_mini_dump(pExceptionPtrs, parent_path.generic_wstring());
+
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->leave_crash(parent_path.generic_string());
+
 			// Terminate process
 			TerminateProcess(GetCurrentProcess(), 1);
 		}
@@ -376,6 +430,8 @@ namespace base
 		// CRT SIGTERM signal handler
 		void sigterm_handler(int)
 		{
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->enter_crash();
 			// Termination request (SIGTERM)
 
 			// Retrieve exception information
@@ -390,7 +446,8 @@ namespace base
 			wstring dump_name = generate_dump_file_name();
 			parent_path.append(dump_name);
 			create_mini_dump(pExceptionPtrs, parent_path.generic_wstring());
-
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->leave_crash(parent_path.generic_string());
 			// Terminate process
 			TerminateProcess(GetCurrentProcess(), 1);
 		}
@@ -434,6 +491,8 @@ namespace base
 		// CRT terminate() call handler
 		void __cdecl terminate_handler()
 		{
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->enter_crash();
 			// Abnormal program termination (terminate() function was called)
 
 			// Retrieve exception information
@@ -448,6 +507,9 @@ namespace base
 			wstring dump_name = generate_dump_file_name();
 			parent_path.append(dump_name);
 			create_mini_dump(pExceptionPtrs, parent_path.generic_wstring());
+
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->leave_crash(parent_path.generic_string());
 			// Terminate process
 			TerminateProcess(GetCurrentProcess(), 1);
 		}
@@ -455,6 +517,8 @@ namespace base
 		// CRT unexpected() call handler
 		void __cdecl unexpected_handler()
 		{
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->enter_crash();
 			// Unexpected error (unexpected() function was called)
 
 			// Retrieve exception information
@@ -469,6 +533,8 @@ namespace base
 			wstring dump_name = generate_dump_file_name();
 			parent_path.append(dump_name);
 			create_mini_dump(pExceptionPtrs, parent_path.generic_wstring());
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->leave_crash(parent_path.generic_string());
 			// Terminate process
 			TerminateProcess(GetCurrentProcess(), 1);
 		}
@@ -476,6 +542,8 @@ namespace base
 		// CRT SIGFPE signal handler
 		void sigfpe_handler(int /*code*/, int subcode)
 		{
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->enter_crash();
 			// Floating point exception (SIGFPE)
 
 			EXCEPTION_POINTERS* pExceptionPtrs = (PEXCEPTION_POINTERS)_pxcptinfoptrs;
@@ -488,6 +556,8 @@ namespace base
 			wstring dump_name = generate_dump_file_name();
 			parent_path.append(dump_name);
 			create_mini_dump(pExceptionPtrs, parent_path.generic_wstring());
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->leave_crash(parent_path.generic_string());
 			// Terminate process
 			TerminateProcess(GetCurrentProcess(), 1);
 
@@ -496,6 +566,8 @@ namespace base
 		// CRT sigill signal handler
 		void sigill_handler(int)
 		{
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->enter_crash();
 			// Illegal instruction (SIGILL)
 
 			// Retrieve exception information
@@ -510,6 +582,8 @@ namespace base
 			wstring dump_name = generate_dump_file_name();
 			parent_path.append(dump_name);
 			create_mini_dump(pExceptionPtrs, parent_path.generic_wstring());
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->leave_crash(parent_path.generic_string());
 			// Terminate process
 			TerminateProcess(GetCurrentProcess(), 1);
 
@@ -518,6 +592,8 @@ namespace base
 		// CRT SIGSEGV signal handler
 		void sigsegv_handler(int)
 		{
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->enter_crash();
 			// Invalid storage access (SIGSEGV)
 
 			PEXCEPTION_POINTERS pExceptionPtrs = (PEXCEPTION_POINTERS)_pxcptinfoptrs;
@@ -530,6 +606,8 @@ namespace base
 			wstring dump_name = generate_dump_file_name();
 			parent_path.append(dump_name);
 			create_mini_dump(pExceptionPtrs, parent_path.generic_wstring());
+			if (sp_g_crash_handler)
+				sp_g_crash_handler->leave_crash(parent_path.generic_string());
 			// Terminate process
 			TerminateProcess(GetCurrentProcess(), 1);
 		}
@@ -564,8 +642,9 @@ namespace base
 }
 
 
-void base::crash::setup()
+void base::crash::setup(std::shared_ptr<crash_handler> sp_handler)
 {
+	sp_g_crash_handler = sp_handler;
 	set_process_exception_handler();
 	set_thread_exception_handler();
 }

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
+#include <regex> 
 #include <windows.h>
 namespace string_helper
 {
@@ -105,6 +106,38 @@ namespace string_helper
 		std::wstring lowerStr = str;
 		std::transform(lowerStr.begin(), lowerStr.end(),lowerStr.begin(),towlower);
 		return lowerStr;
+	}
+
+	std::string string_To_UTF8(const std::string & str)
+	{
+		int nwLen = ::MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, NULL, 0);
+
+		wchar_t * pwBuf = new wchar_t[nwLen + 1];//一定要加1，不然会出现尾巴  
+		ZeroMemory(pwBuf, nwLen * 2 + 2);
+
+		::MultiByteToWideChar(CP_ACP, 0, str.c_str(), str.length(), pwBuf, nwLen);
+
+		int nLen = ::WideCharToMultiByte(CP_UTF8, 0, pwBuf, -1, NULL, NULL, NULL, NULL);
+
+		char * pBuf = new char[nLen + 1];
+		ZeroMemory(pBuf, nLen + 1);
+
+		::WideCharToMultiByte(CP_UTF8, 0, pwBuf, nwLen, pBuf, nLen, NULL, NULL);
+
+		std::string retStr(pBuf);
+
+		delete[]pwBuf;
+		delete[]pBuf;
+
+		pwBuf = NULL;
+		pBuf = NULL;
+
+		return retStr;
+	}
+
+	std::string replace(std::string& input, const std::string& target, const std::string& curent)
+	{
+		return std::regex_replace(input, std::regex(target), curent);
 	}
 
 	std::vector<std::string> split(const std::string& str, const std::string& sc)
